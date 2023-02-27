@@ -32,7 +32,7 @@ In order to properly install the game, you'll have to follow these steps precise
 
 - **Optional**: Install [PSVshell](https://github.com/Electry/PSVshell/releases) to overclock your device to 500Mhz.
 - Install `libshacccg.suprx`, if you don't have it already, by following [this guide](https://samilops2.gitbook.io/vita-troubleshooting-guide/shader-compiler/extract-libshacccg.suprx).
-- Obtain your copy of *Anomaly: Warzone Earth HD* legally for Android in form of an `.apk` file and a `.obb` file.
+- Obtain your copy of *Anomaly: Korea* legally for Android in form of an `.apk` file and a `.obb` file.
 - Open the apk with your zip explorer and extract the file `libAndroidAnomaly.so` from the `lib/armeabi` folder to `ux0:data/anomaly_korea`. 
 - Place the obb file named as `main.obb` in `ux0:data/anomaly_korea`.
 
