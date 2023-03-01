@@ -12,7 +12,11 @@ This wrapper has been tested only with v.1.03.
 
 ## Changelog
 
-### v1.0
+### v.1.1
+
+- Made so that it's possible to pause/resume game by pressing the Start button.
+
+### v.1.0
 
 - Initial release.
 
