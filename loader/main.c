@@ -1406,8 +1406,9 @@ int main(int argc, char *argv[]) {
 	scePowerSetBusClockFrequency(222);
 	scePowerSetGpuClockFrequency(222);
 	scePowerSetGpuXbarClockFrequency(166);
-
-	pstv_mode = sceCtrlIsMultiControllerSupported() ? 1 : 0;
+	
+	loadConfig();
+	eglSwapInterval(0, framecap ? 2 : 1);
 
 	if (check_kubridge() < 0)
 		fatal_error("Error kubridge.skprx is not installed.");
@@ -1428,7 +1429,17 @@ int main(int argc, char *argv[]) {
 
 	vglSetupRuntimeShaderCompiler(SHARK_OPT_UNSAFE, SHARK_ENABLE, SHARK_ENABLE, SHARK_ENABLE);
 	vglSetupGarbageCollector(127, 0x20000);
-	vglInitExtended(0, SCREEN_W, SCREEN_H, MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
+	switch (antialiasing) {
+	case 0:
+		vglInitExtended(0, SCREEN_W, SCREEN_H, MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024, SCE_GXM_MULTISAMPLE_NONE);
+		break;
+	case 1:
+		vglInitExtended(0, SCREEN_W, SCREEN_H, MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024, SCE_GXM_MULTISAMPLE_2X);
+		break;
+	default:
+		vglInitExtended(0, SCREEN_W, SCREEN_H, MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
+		break;
+	}
 	
 	int (* Java_com_android_Game11Bits_GameLib_initOBBFile)(void *env, void *obj, const char *file, int filesize) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_initOBBFile");
 	int (* Java_com_android_Game11Bits_GameLib_init)(void *env, void *obj, const char *ApkFilePath, const char *StorageFilePath, const char *CacheFilePath, int resX, int resY, int sdkVersion) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_init");
