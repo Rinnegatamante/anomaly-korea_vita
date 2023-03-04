@@ -784,7 +784,7 @@ void glShaderSource_hook(GLuint shader, GLsizei count, const GLchar **string, co
 	snprintf(sha_name, sizeof(sha_name), "%08x%08x%08x%08x%08x", sha1[0], sha1[1], sha1[2], sha1[3], sha1[4]);
 
 	char cg_path[128];
-	snprintf(cg_path, sizeof(cg_path), "app0:/shaders/%s.cg.gxp", sha_name);
+	snprintf(cg_path, sizeof(cg_path), "app0:/shaders/%c%c/%s.cg.gxp",sha_name[0], sha_name[1], sha_name);
 
 	FILE *file = fopen(cg_path, "rb");
 	//printf("Shader: %s\n", sha_name);
@@ -796,12 +796,14 @@ void glShaderSource_hook(GLuint shader, GLsizei count, const GLchar **string, co
 		}
 		fclose(file);
 		if (strstr(string[1], "gl_FragColor"))
-			file = fopen("app0:/shaders/f039ad25982f2013426277d1d85c75f62a507850.cg.gxp", "rb");
+			file = fopen("app0:/shaders/f0/f039ad25982f2013426277d1d85c75f62a507850.cg.gxp", "rb");
 		else
-			file = fopen("app0:/shaders/ca7f578085d2b17c441e4e4843d8ce2b700a00ad.cg.gxp", "rb");
+			file = fopen("app0:/shaders/ca/ca7f578085d2b17c441e4e4843d8ce2b700a00ad.cg.gxp", "rb");
 	} else {
 		/*char dst_name[128];
-		sprintf(dst_name, "ux0:data/anomaly_korea/%s.cg", sha_name);
+		sprintf(dst_name, "ux0:data/anomaly_korea/%c%c", sha_name[0], sha_name[1]);
+		sceIoMkdir(dst_name, 0777);
+		sprintf(dst_name, "ux0:data/anomaly_korea/%c%c/%s.cg.gxp", sha_name[0], sha_name[1], sha_name);
 		copy_file(cg_path, dst_name);*/
 	}
 		
