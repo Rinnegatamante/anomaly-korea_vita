@@ -41,12 +41,33 @@
 #include "so_util.h"
 #include "sha1.h"
 
+#define CONFIG_FILE_PATH "ux0:data/anomaly_korea/settings.cfg"
+
+int graphics = 2;
+int antialiasing = 2;
+int framecap = 0;
+
+void loadConfig(void) {
+	char buffer[30];
+	int value;
+
+	FILE *config = fopen(CONFIG_FILE_PATH, "r");
+
+	if (config) {
+		while (EOF != fscanf(config, "%[^ ] %d\n", buffer, &value)) {
+			if (strcmp("graphics", buffer) == 0) graphics = value;
+			else if (strcmp("antialiasing", buffer) == 0) antialiasing = value;
+			else if (strcmp("framecap", buffer) == 0) framecap = value;
+		}
+		fclose(config);
+	}
+}
+
 extern const char *BIONIC_ctype_;
 extern const short *BIONIC_tolower_tab_;
 extern const short *BIONIC_toupper_tab_;
 
 int pstv_mode = 0;
-int enable_dlcs = 0;
 
 int _newlib_heap_size_user = MEMORY_NEWLIB_MB * 1024 * 1024;
 
@@ -671,8 +692,7 @@ void patch_game(void) {
 	hook_addr(so_symbol(&funky_mod, "_Z22DeteremineSystemMemoryv"), (uintptr_t)DeteremineSystemMemory);
 
 	hook_addr(so_symbol(&funky_mod, "_ZN14GoogleServices10IsSignedInEv"), (uintptr_t)ret0);
-	hook_addr(so_symbol(&funky_mod, "_ZN26InAppStoreAndroidInterface24IsInAppPurchasePurchasedERK10NameString"), enable_dlcs ? (uintptr_t)ret1 : (uintptr_t)ret0);
-
+	
 	hook_addr(so_symbol(&funky_mod, "_Z12SetGLContextv"), (uintptr_t)ret0);
 	hook_addr(so_symbol(&funky_mod, "_Z16PresentGLContextv"), (uintptr_t)PresentGLContext);
 
@@ -839,8 +859,8 @@ GLint glGetUniformLocation_hook(GLuint program, const GLchar *name) {
 }
 
 char *glGetString_hook(GLenum name) {
-	//if (name == GL_RENDERER)
-	//	return "Mali-400 MP";
+	if (name == GL_RENDERER && graphics > 0)
+		return "Mali-400 MP";
 	return glGetString(name);
 }
 
@@ -1435,8 +1455,9 @@ int main(int argc, char *argv[]) {
 	struct stat st;
 	stat(DATA_PATH "/main.obb", &st);
 	
-	//int (* Java_com_android_Game11Bits_GameLib_requestRenderingFeatures)(void *env, void *obj, char use_stencil, char use_fse, char upscale_high_res) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_requestRenderingFeatures");
-	//Java_com_android_Game11Bits_GameLib_requestRenderingFeatures(fake_env, NULL, 1, 1, 1);
+	int (* Java_com_android_Game11Bits_GameLib_requestRenderingFeatures)(void *env, void *obj, char use_stencil, char use_fse, char upscale_high_res) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_requestRenderingFeatures");
+	if (graphics == 2)
+		Java_com_android_Game11Bits_GameLib_requestRenderingFeatures(fake_env, NULL, 1, 1, 1);
 	
 	printf("%x %x\n", Java_com_android_Game11Bits_GameLib_initOBBFile, Java_com_android_Game11Bits_GameLib_init);
 	Java_com_android_Game11Bits_GameLib_initOBBFile(fake_env, NULL, DATA_PATH "/main.obb", st.st_size);
@@ -1457,6 +1478,7 @@ int main(int argc, char *argv[]) {
 		f = fopen(DATA_PATH "/assets/start.mp4", "wb");
 		fwrite(video_buf, 1, video_size, f);
 		fclose(f);
+		free(video_buf);
 	}
 	
 	// Playing the intro video
