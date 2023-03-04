@@ -458,7 +458,7 @@ void _sync_synchronize() {
 	__sync_synchronize();
 }
 
-FILE *OpenJetFile(char *fname, char *mode) {
+/*FILE *OpenJetFile(char *fname, char *mode) {
 	FILE *f;
 	char real_fname[256];
 	printf("OpenJetFile(%s)\n", fname);
@@ -470,7 +470,7 @@ FILE *OpenJetFile(char *fname, char *mode) {
 		f = fopen(fname, "rb");
 	}
 	return f;
-}
+}*/
 
 int GameConsolePrint(void *this, int a1, int a2, char *text, ...) {
 	//#ifdef DEBUG
@@ -501,7 +501,7 @@ void patch_game(void) {
 	//hook_addr(so_symbol(&funky_mod, "_ZN26XRayServerRequestInternals12_SendRequestEPKc"), (uintptr_t)ret0);
 	hook_addr((uintptr_t)funky_mod.text_base + 0x423A9C, (uintptr_t)_sync_synchronize);
 	hook_addr((uintptr_t)funky_mod.text_base + 0x424854, (uintptr_t)_sync_synchronize);
-	
+	hook_addr(so_symbol(&funky_mod, "_ZN11GameConsole5PrintEhhPKcz"), (uintptr_t)GameConsolePrint);
 	//hook_addr(so_symbol(&funky_mod, "_Z11OpenJetFilePKcPj"), (uintptr_t)OpenJetFile);
 	
 	hook_addr(so_symbol(&funky_mod, "alAuxiliaryEffectSlotf"), (uintptr_t)alAuxiliaryEffectSlotf);
@@ -676,7 +676,6 @@ void patch_game(void) {
 	hook_addr(so_symbol(&funky_mod, "_Z12SetGLContextv"), (uintptr_t)ret0);
 	hook_addr(so_symbol(&funky_mod, "_Z16PresentGLContextv"), (uintptr_t)PresentGLContext);
 
-	hook_addr(so_symbol(&funky_mod, "_ZN11GameConsole5PrintEhhPKcz"), (uintptr_t)ret0);
 	hook_addr(so_symbol(&funky_mod, "_ZN11GameConsole12PrintWarningEhPKcz"), (uintptr_t)ret0);
 	hook_addr(so_symbol(&funky_mod, "_ZN11GameConsole10PrintErrorEhPKcz"), (uintptr_t)ret0);
 
@@ -837,6 +836,12 @@ GLint glGetUniformLocation_hook(GLuint program, const GLchar *name) {
 		glUniform4fv(res, 32 * 3, bones);
 	}
 	return res;
+}
+
+char *glGetString_hook(GLenum name) {
+	//if (name == GL_RENDERER)
+	//	return "Mali-400 MP";
+	return glGetString(name);
 }
 
 static so_default_dynlib default_dynlib[] = {
@@ -1023,7 +1028,7 @@ static so_default_dynlib default_dynlib[] = {
 	{ "glGetShaderInfoLog", (uintptr_t)&glGetShaderInfoLog },
 	{ "glGetShaderPrecisionFormat", (uintptr_t)&ret0 },
 	{ "glGetShaderiv", (uintptr_t)&glGetShaderiv },
-	{ "glGetString", (uintptr_t)&glGetString },
+	{ "glGetString", (uintptr_t)&glGetString_hook },
 	{ "glGetUniformLocation", (uintptr_t)&glGetUniformLocation_hook },
 	{ "glLinkProgram", (uintptr_t)&glLinkProgram },
 	{ "glPolygonOffset", (uintptr_t)&glPolygonOffset },
@@ -1402,23 +1407,6 @@ int main(int argc, char *argv[]) {
 	vglSetupRuntimeShaderCompiler(SHARK_OPT_UNSAFE, SHARK_ENABLE, SHARK_ENABLE, SHARK_ENABLE);
 	vglSetupGarbageCollector(127, 0x20000);
 	vglInitExtended(0, SCREEN_W, SCREEN_H, MEMORY_VITAGL_THRESHOLD_MB * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
-
-	// Playing the intro video if present)
-	/*SceIoStat st1;
-	if (sceIoGetstat("ux0:data/anomaly/assets/start.mp4", &st1) >= 0) {
-		YYVideoOpen("start.mp4");
-		while (!YYVideoDraw()) {
-			vglSwapBuffers(GL_FALSE);
-			SceCtrlData pad;
-			SceTouchData touch;
-			sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
-			sceCtrlPeekBufferPositive(0, &pad, 1);
-			if (pad.buttons || touch.reportNum) {
-				YYVideoStop();
-				break;
-			}
-		}
-	}*/
 	
 	int (* Java_com_android_Game11Bits_GameLib_initOBBFile)(void *env, void *obj, const char *file, int filesize) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_initOBBFile");
 	int (* Java_com_android_Game11Bits_GameLib_init)(void *env, void *obj, const char *ApkFilePath, const char *StorageFilePath, const char *CacheFilePath, int resX, int resY, int sdkVersion) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_init");
@@ -1446,10 +1434,46 @@ int main(int argc, char *argv[]) {
 
 	struct stat st;
 	stat(DATA_PATH "/main.obb", &st);
+	
+	//int (* Java_com_android_Game11Bits_GameLib_requestRenderingFeatures)(void *env, void *obj, char use_stencil, char use_fse, char upscale_high_res) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_requestRenderingFeatures");
+	//Java_com_android_Game11Bits_GameLib_requestRenderingFeatures(fake_env, NULL, 1, 1, 1);
+	
 	printf("%x %x\n", Java_com_android_Game11Bits_GameLib_initOBBFile, Java_com_android_Game11Bits_GameLib_init);
 	Java_com_android_Game11Bits_GameLib_initOBBFile(fake_env, NULL, DATA_PATH "/main.obb", st.st_size);
+	
+	// Extracting intro video
+	SceIoStat st1;
+	if (sceIoGetstat("ux0:data/anomaly_korea/assets/start.mp4", &st1) < 0) {
+		sceIoMkdir("ux0:data/anomaly_korea/assets", 0777);
+		int (* Java_com_android_Game11Bits_GameLib_getOBBOffset)(void *env, void *obj, int idx) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_getOBBOffset");
+		int (* Java_com_android_Game11Bits_GameLib_getOBBSize)(void *env, void *obj, int idx) = (void *)so_symbol(&funky_mod, "Java_com_android_Game11Bits_GameLib_getOBBSize");
+		FILE *f = fopen(DATA_PATH "/main.obb", "rb");
+		int video_offs = Java_com_android_Game11Bits_GameLib_getOBBOffset(fake_env, NULL, 0);
+		int video_size = Java_com_android_Game11Bits_GameLib_getOBBSize(fake_env, NULL, 0);
+		void *video_buf = malloc(video_size);
+		fseek(f, video_offs, SEEK_SET);
+		fread(video_buf, 1, video_size, f);
+		fclose(f);
+		f = fopen(DATA_PATH "/assets/start.mp4", "wb");
+		fwrite(video_buf, 1, video_size, f);
+		fclose(f);
+	}
+	
+	// Playing the intro video
+	YYVideoOpen("start.mp4");
+	while (!YYVideoDraw()) {
+		vglSwapBuffers(GL_FALSE);
+		SceCtrlData pad;
+		SceTouchData touch;
+		sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
+		sceCtrlPeekBufferPositive(0, &pad, 1);
+		if (pad.buttons || touch.reportNum) {
+			YYVideoStop();
+			break;
+		}
+	}
+	
 	Java_com_android_Game11Bits_GameLib_init(fake_env, (void *)0x41414141, "apk", DATA_PATH, NULL, SCREEN_W, SCREEN_H, 0);
-
 	SceUID ctrl_thid = sceKernelCreateThread("ctrl_thread", (SceKernelThreadEntry)ctrl_thread, 0x10000100, 128 * 1024, 0, 0, NULL);
 	sceKernelStartThread(ctrl_thid, 0, NULL);
 
