@@ -1353,6 +1353,8 @@ int ctrl_thread(SceSize args, void *argp) {
 	int lastX[2] = { -1, -1 };
 	int lastY[2] = { -1, -1 };
 	int lastStart = 0;
+	int lastRT = 0;
+	int lastLT = 0;
 
 	while (1) {
 		SceTouchData touch;
@@ -1380,12 +1382,28 @@ int ctrl_thread(SceSize args, void *argp) {
 		SceCtrlData pad;
 		sceCtrlPeekBufferPositive(0, &pad, 1);
 		int currStart = (pad.buttons & SCE_CTRL_START) ? 1 : 0;
+		int currLT = (pad.buttons & SCE_CTRL_LTRIGGER) ? 1 : 0;
+		int currRT = (pad.buttons & SCE_CTRL_RTRIGGER) ? 1 : 0;
 		if (currStart != lastStart) {
 			if (!lastStart)
 				Java_com_android_Game11Bits_GameLib_touchDown(fake_env, NULL, touch.reportNum, 920, 30);
 			else
 				Java_com_android_Game11Bits_GameLib_touchUp(fake_env, NULL, touch.reportNum, 920, 30);
 		}
+		if (currLT != lastLT) {
+			if (!lastLT)
+				Java_com_android_Game11Bits_GameLib_touchDown(fake_env, NULL, touch.reportNum, 31, 31);
+			else
+				Java_com_android_Game11Bits_GameLib_touchUp(fake_env, NULL, touch.reportNum, 31, 31);
+		}
+		if (currRT != lastRT) {
+			if (!lastRT)
+				Java_com_android_Game11Bits_GameLib_touchDown(fake_env, NULL, touch.reportNum, 925, 505);
+			else
+				Java_com_android_Game11Bits_GameLib_touchUp(fake_env, NULL, touch.reportNum, 925, 505);
+		}
+		lastRT = currRT;
+		lastLT = currLT;
 		lastStart = currStart;
 
 		sceKernelDelayThread(1000);
