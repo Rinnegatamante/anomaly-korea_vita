@@ -91,7 +91,7 @@ void *__wrap_memset(void *s, int c, size_t n) {
 }
 
 int debugPrintf(char *text, ...) {
-#ifdef DEBUG
+#ifdef ENABLE_DEBUG
 	va_list list;
 	static char string[0x8000];
 
@@ -105,7 +105,7 @@ int debugPrintf(char *text, ...) {
 }
 
 int __android_log_print(int prio, const char *tag, const char *fmt, ...) {
-#ifdef DEBUG
+#ifdef ENABLE_DEBUG
 	va_list list;
 	static char string[0x8000];
 
@@ -119,7 +119,7 @@ int __android_log_print(int prio, const char *tag, const char *fmt, ...) {
 }
 
 int __android_log_write(int prio, const char *tag, const char *text) {
-#ifdef DEBUG
+#ifdef ENABLE_DEBUG
 	 printf("[LOG] %s: %s\n", tag, text);
 #endif
 	return 0;
@@ -494,7 +494,7 @@ void _sync_synchronize() {
 }*/
 
 int GameConsolePrint(void *this, int a1, int a2, char *text, ...) {
-	//#ifdef DEBUG
+#ifdef ENABLE_DEBUG
 	va_list list;
 	static char string[0x8000];
 
@@ -503,7 +503,7 @@ int GameConsolePrint(void *this, int a1, int a2, char *text, ...) {
 	va_end(list);
 
 	printf("GameConsolePrint: %s\n", string);
-//#endif
+#endif
 	return 0;
 }
 
@@ -1417,6 +1417,18 @@ extern int YYVideoDraw();
 extern void YYVideoStop();
 
 int main(int argc, char *argv[]) {
+	// Check if we want to start the companion app
+	sceAppUtilInit(&(SceAppUtilInitParam){}, &(SceAppUtilBootParam){});
+	SceAppUtilAppEventParam eventParam;
+	sceClibMemset(&eventParam, 0, sizeof(SceAppUtilAppEventParam));
+	sceAppUtilReceiveAppEvent(&eventParam);
+	if (eventParam.type == 0x05) {
+		char buffer[2048];
+		sceAppUtilAppEventParseLiveArea(&eventParam, buffer);
+		if (strstr(buffer, "test"))
+			sceAppMgrLoadExec("app0:/companion.bin", NULL, NULL);
+	}
+	
 	//sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
 	sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
 
