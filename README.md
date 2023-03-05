@@ -12,6 +12,16 @@ This wrapper has been tested only with v.1.03.
 
 ## Changelog
 
+### v.1.2
+
+- Added intro video playback when the game is launched.
+- Added configurable options and a companion app to edit those settings (Framecap, Graphics Quality and Antialiasing).
+- Clusterized shaders in subfolders. Now loading times should be faster.
+- Reworked Livearea assets (Thanks to Once13one).
+- Disabled game logs (Slight performance boost).
+- Bind L to mission goals showup.
+- Bind R to fast forward.
+
 ### v.1.1
 
 - Made so that it's possible to pause/resume game by pressing the Start button.
